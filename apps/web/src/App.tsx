@@ -3,7 +3,7 @@ import { api } from "./api";
 import { AnalysisPanel } from "./components/AnalysisPanel";
 import { CubeView } from "./components/CubeView";
 import { MoveList } from "./components/MoveList";
-import { Timeline } from "./components/Timeline";
+import { Scrubber, Timeline } from "./components/Timeline";
 import { VideoPlayer, type PlayerHandle } from "./components/VideoPlayer";
 import type { CsTimerSolve, LabelSummary, ScrambleSource, Segment, Solve, Stats, TimedMove, VideoMeta } from "./types";
 import {
@@ -549,6 +549,15 @@ export function App() {
                 onPlayingChange={setPlaying}
               />
             </div>
+            <Scrubber
+              durationMs={video.duration_ms}
+              currentMs={currentMs}
+              labeled={labels
+                .filter((l) => l.name !== labelName && l.solve_window)
+                .map((l) => l.solve_window!)}
+              current={win}
+              onSeek={seekMs}
+            />
             <div className="transport">
               <button onClick={() => player.current?.step(-10)}>−10</button>
               <button onClick={() => player.current?.step(-1)}>−1</button>

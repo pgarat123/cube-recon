@@ -126,3 +126,18 @@ a { color: var(--accent); cursor: pointer; }
 .steps td.alg { font-family: ui-monospace, Menlo, monospace; }
 .pauses { color: var(--muted); }
 .warn-box { border: 1px solid var(--warn); color: var(--warn); border-radius: 6px; padding: 8px 10px; margin: 0; }
+
+.scrubber-row { display: flex; align-items: center; gap: 10px; }
+.scrubber {
+  position: relative; flex: 1; height: 18px; cursor: pointer; touch-action: none;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 9px; overflow: hidden;
+}
+.sc-fill { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(79, 140, 255, .25); pointer-events: none; }
+.sc-solve { position: absolute; top: 3px; bottom: 3px; background: var(--ok); opacity: .55; border-radius: 3px; pointer-events: none; }
+.sc-solve.current { background: var(--warn); opacity: .85; }
+.sc-head { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: var(--danger); pointer-events: none; }
+.timeline { touch-action: none; }
+.timeline > * { pointer-events: none; }
+.tl-out { position: absolute; top: 9px; font-size: 11px; color: var(--warn); }
+.tl-out.left { left: 8px; }
+.tl-out.right { right: 8px; }
