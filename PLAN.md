@@ -2,7 +2,7 @@
 
 Reconstruction assistée de solves 3x3 (CFOP) à partir d'une vidéo, sans smart cube, puis analyse de la solve (étapes, temps, pauses, rotations, regrips, à terme fingertricks).
 
-Statut : cadrage validé le 2026-11-18. Phase 0 : repo initialisé (uv, pytest, ruff), dataset vidéo à filmer.
+Statut : cadrage validé le 2026-11-18. Phase 0 : repo initialisé (uv, pytest, ruff), dataset vidéo à filmer. Phase 1 : moteur cube, analyse CFOP et format Solve faits, outil de labellisation à faire.
 
 ---
 
@@ -91,14 +91,18 @@ cube-recon/
 | Stockage | Fichiers JSON + SQLite si besoin d'index |
 | Mobile (plus tard) | Export ONNX / CoreML des modèles, logique cube réécrite côté app |
 
-## 6. Protocole de capture (à respecter pour le dataset initial)
+## 6. Protocole de capture
 
-- Téléphone sur trépied, vue de face légèrement au-dessus, cube entier dans le cadre pendant toute la solve.
-- iPhone 18 Pro Max en slow-mo 240 fps, 1080p. Exporter le fichier original, pas la version ralentie "lue" : vérifier que le fps réel est conservé.
-- Lumière diffuse, fond uni, même cube à chaque fois.
-- Quelques secondes de cube immobile avant l'inspection (calibration couleurs).
-- Mélange généré par csTimer et noté avec l'horodatage de la vidéo.
-- Objectif de départ : 20 à 30 solves normales + 5 solves lentes (pour valider la chaîne sur cas faciles).
+Setup de référence : celui que l'utilisateur utilise déjà à l'entraînement (vidéos GoPro du 2 mai 2026, dossier OneDrive « Rush cube/Training »).
+
+- **Caméra** : GoPro en vue POV, au-dessus et derrière les épaules, plongeante vers le cube. Elle voit U et F comme le solveur, donc tout le last layer.
+- **Format** : 1080p à 120 fps (HEVC), objectif grand angle. La distorsion est corrigée par calibration de l'objectif, elle est faible au centre où se trouve le cube.
+- **Une vidéo = une session** de plusieurs solves. Le timer (type stackmat GAN) est visible à l'image : il sert à découper la vidéo en solves et à synchroniser début et fin.
+- **Scrambles** : générés par csTimer, récupérés par l'export de session csTimer et associés aux solves grâce au temps affiché. À défaut, une solve labellisée donne son scramble par inversion de la solution.
+- **Constance** : même position de caméra d'une session à l'autre, même cube.
+- **À améliorer si possible** : plus de lumière (moins de flou de mouvement à 120 fps), sortir du champ les autres cubes (5x5, cube dessiné sur le tapis).
+- **Option** : sessions dédiées en slow-mo 240 fps avec l'iPhone 18 Pro Max pour les solves les plus rapides, en exportant le fichier original (vérifier que le fps réel est conservé).
+- **Objectif de départ** : 20 à 30 solves avec scramble identifié, plus quelques solves lentes pour valider la chaîne sur des cas faciles.
 
 ## 7. Feuille de route
 
@@ -107,17 +111,23 @@ Chaque phase a un livrable et un critère de fin mesurable. On ne passe pas à l
 ### Phase 0 : données et socle (surtout côté utilisateur)
 - Filmer le dataset selon le protocole de la section 6.
 - [x] Initialiser le repo (uv, pytest, ruff, structure).
-- [ ] Filmer le dataset (utilisateur).
-- **Fini quand** : 20 vidéos + mélanges dans `data/`, `uv run pytest` passe sur un repo vide.
+- [x] Dataset initial existant : 3 vidéos GoPro du 2 mai 2026 (GX010395 à GX010397, 1080p 120 fps, plusieurs solves chacune).
+- [ ] Copier les vidéos dans `data/videos/` et exporter la session csTimer correspondante dans `data/labels/` (utilisateur).
+- **Fini quand** : vidéos et export csTimer dans `data/`, au moins 20 solves avec scramble identifié, `uv run pytest` passe.
 
 ### Phase 1 : moteur cube, analyse, outil de labellisation
-- `cube/` : état, mouvements (y compris wide, slices, rotations), parseur, inverse, test "mélange + solution = résolu".
-- `analysis/` : segmentation CFOP (croix sur n'importe quelle couleur, comptage des paires F2L, OLL, PLL, AUF), reconnaissance des cas OLL/PLL avec AUF (par l'état du cube), extraction automatique des algos LL de l'utilisateur à partir des solves labellisées, stats (TPS global et par étape, pauses, nombre de rotations, temps de reconnaissance).
-- Outil web de labellisation : lecteur vidéo image par image au clavier, saisie des mouvements avec timestamps, cube 3D synchronisé, export `Solve` JSON.
+- [x] `cube/` : état 54 facettes, mouvements (faces, wide, slices, rotations), parseur, inverse, `strip_rotations`, test "mélange + solution = résolu".
+- [x] `analysis/` : segmentation CFOP (croix sur n'importe quelle couleur, comptage des paires F2L, OLL, PLL, AUF), reconnaissance des 57 OLL et 21 PLL par l'état du cube (indépendante de l'AUF et de l'orientation, pré-AUF calculé), stats (TPS ETM/STM global et par étape, pauses, nombre de rotations, temps de reconnaissance).
+- [x] `io/` : format `Solve` JSON (section 3), avec validation et `schema_version`.
+- [ ] `analysis/` : extraction automatique des algos LL de l'utilisateur à partir des solves labellisées (attend les premières solves labellisées).
+- [ ] Outil web de labellisation : lecteur vidéo image par image au clavier, saisie des mouvements avec timestamps, cube 3D synchronisé, export `Solve` JSON.
+- [ ] Valider la segmentation sur de vraies solves de l'utilisateur (les tests actuels utilisent des solves CFOP construites, faute de reconstruction publique accessible).
 - **Fini quand** : 10 solves labellisées à la main, analysées correctement ; temps moyen de labellisation manuelle d'une solve mesuré (c'est la référence que l'outil assisté devra battre).
 
 ### Phase 2 : perception
-- Détection/suivi du cube (YOLO fine-tuné sur quelques centaines d'images annotées).
+- Découpage d'une vidéo de session en solves grâce au timer visible, et association avec les scrambles de l'export csTimer.
+- Correction de la distorsion grand angle de la GoPro.
+- Détection/suivi du cube (YOLO fine-tuné sur quelques centaines d'images annotées), en ignorant les autres cubes du décor.
 - Redressement des faces visibles et lecture des couleurs sur les frames stables, avec calibration.
 - MediaPipe Hands : masques d'occlusion et trajectoires des doigts.
 - **Fini quand** : précision de lecture des facettes visibles et non masquées > 98 % sur frames stables du jeu de test.
@@ -158,6 +168,8 @@ Le jeu de test est figé dès la phase 1 (quelques solves jamais utilisées pour
 - **Confusions de couleurs** (rouge/orange, blanc/jaune selon la lumière) : calibration par vidéo, espace Lab.
 - **F2L intuitif** : pas de prior d'algos, c'est la partie la plus dure.
 - **Volume de labels** : fatigue de labellisation. Mitigation : outil rapide en phase 1, boucle de correction en phase 3.
+- **Cube petit dans l'image** (environ 175 px de large en 1080p, 50 px par facette) : suffisant pour les couleurs, juste pour les mouvements rapides. Mitigation : recadrage autour du cube suivi, sessions 240 fps en option.
+- **Faux positifs** : autres cubes dans le décor (5x5, illustration du tapis). Mitigation : suivi temporel du cube actif, exemples négatifs à l'annotation.
 - **Overfit au setup** : assumé pour la V1, traité en phase 5.
 - **Budget Claude (forfait Pro)** : voir CLAUDE.md.
 
