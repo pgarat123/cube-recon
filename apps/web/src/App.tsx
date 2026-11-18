@@ -79,6 +79,8 @@ export function App() {
   const player = useRef<PlayerHandle>(null);
   const lastActivity = useRef(Date.now());
   const revision = useRef(0);
+  const playingRef = useRef(false);
+  playingRef.current = playing;
 
   const video = videos.find((v) => v.name === videoName) ?? null;
   const currentMs = video ? frameToMs(frame, video) : 0;
@@ -365,6 +367,8 @@ export function App() {
       const now = Date.now();
       const delta = now - last;
       last = now;
+      // Watching the video play is labeling work, even without keyboard or mouse input.
+      if (playingRef.current) lastActivity.current = now;
       const isIdle = now - lastActivity.current > IDLE_MS;
       setIdle(isIdle);
       if (!timerOn || isIdle || document.visibilityState !== "visible") return;

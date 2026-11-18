@@ -11,6 +11,9 @@ interface Props {
   onSeek: (ms: number) => void;
 }
 
+/** Below this, a step's TPS is noise (e.g. a lone AUF move gives 20+ TPS). */
+const MIN_MOVES_FOR_TPS = 3;
+
 const COLOR_FR: Record<string, string> = {
   white: "blanc",
   yellow: "jaune",
@@ -90,7 +93,7 @@ export function AnalysisPanel({ segments, stats, moves, window, currentMs, error
                 <td>{st ? fmtSec(st.recognition_ms) : ""}</td>
                 <td>{st ? fmtSec(st.execution_ms) : ""}</td>
                 <td>{st ? st.moves_stm : seg.move_range[1] - seg.move_range[0]}</td>
-                <td>{st ? st.tps_stm.toFixed(1) : ""}</td>
+                <td>{st && st.moves_stm >= MIN_MOVES_FOR_TPS ? st.tps_stm.toFixed(1) : st ? "–" : ""}</td>
               </tr>
             );
           })}
