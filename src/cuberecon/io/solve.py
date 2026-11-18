@@ -11,8 +11,10 @@ from uuid import uuid4
 
 from cuberecon.cube import FACES, Move, parse_move, parse_moves
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+"""v2 adds ``solve_window``, ``scramble_source`` and ``labeling_time_ms`` (all optional)."""
 SOURCES = ("manual", "auto", "corrected")
+SCRAMBLE_SOURCES = ("manual", "cstimer", "derived")
 DEFAULT_COLOR_SCHEME: dict[str, str] = {
     "U": "white",
     "F": "green",
@@ -34,6 +36,18 @@ class VideoInfo:
     width: int
     height: int
     duration_ms: float
+
+
+@dataclass
+class TimeWindow:
+    """Bounds of the solve inside the video (ms from the start of the video)."""
+
+    t_start_ms: float
+    t_end_ms: float
+
+    def __post_init__(self) -> None:
+        if self.t_end_ms < self.t_start_ms:
+            raise SolveFormatError("solve window ends before it starts")
 
 
 @dataclass
@@ -86,6 +100,11 @@ class Solve:
     """Optional color -> list of Lab samples."""
     segments: list[Segment] = field(default_factory=list)
     stats: dict[str, Any] = field(default_factory=dict)
+    solve_window: TimeWindow | None = None
+    scramble_source: str = "manual"
+    """Where the scramble comes from: typed, csTimer export, or derived from the moves."""
+    labeling_time_ms: float = 0.0
+    """Active time spent labeling this solve by hand (reference metric, PLAN.md phase 1)."""
 
     def __post_init__(self) -> None:
         try:
@@ -94,6 +113,10 @@ class Solve:
             raise SolveFormatError(f"invalid scramble: {exc}") from exc
         if set(self.color_scheme) != set(FACES):
             raise SolveFormatError("color_scheme must map exactly the faces U R F D L B")
+        if self.scramble_source not in SCRAMBLE_SOURCES:
+            raise SolveFormatError(f"unknown scramble_source {self.scramble_source!r}")
+        if self.labeling_time_ms < 0:
+            raise SolveFormatError("labeling_time_ms must be >= 0")
 
     def parsed_moves(self) -> list[Move]:
         return [m.parsed() for m in self.moves]
@@ -110,6 +133,9 @@ class Solve:
             "moves": [vars(m).copy() for m in self.moves],
             "segments": [{**vars(s), "move_range": list(s.move_range)} for s in self.segments],
             "stats": self.stats,
+            "solve_window": None if self.solve_window is None else vars(self.solve_window).copy(),
+            "scramble_source": self.scramble_source,
+            "labeling_time_ms": self.labeling_time_ms,
         }
 
     @classmethod
@@ -119,6 +145,7 @@ class Solve:
             raise SolveFormatError(f"unsupported schema_version {version}")
         try:
             video = data.get("video")
+            window = data.get("solve_window")
             return cls(
                 id=data["id"],
                 created_at=data["created_at"],
@@ -132,6 +159,9 @@ class Solve:
                     for s in data.get("segments", [])
                 ],
                 stats=data.get("stats") or {},
+                solve_window=None if window is None else TimeWindow(**window),
+                scramble_source=data.get("scramble_source", "manual"),
+                labeling_time_ms=float(data.get("labeling_time_ms", 0.0)),
             )
         except (KeyError, TypeError) as exc:
             raise SolveFormatError(f"malformed solve: {exc}") from exc

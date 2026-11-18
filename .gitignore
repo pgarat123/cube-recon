@@ -10,3 +10,4 @@ dist/
 *.onnx
 *.pt
 *.mlpackage
+*.tsbuildinfo

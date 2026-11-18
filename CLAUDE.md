@@ -29,5 +29,6 @@ Lire PLAN.md pour la vision, l'architecture et la feuille de route. Ce fichier n
 - `uv run pytest` : tests
 - `uv run ruff check .` et `uv run ruff format .` : lint et formatage
 - `uv add <pkg>` : ajouter une dépendance (ne pas éditer pyproject à la main pour ça)
+- `uv run cuberecon-label` : outil de labellisation (build du front d'abord : `npm --prefix apps/web ci && npm --prefix apps/web run build`)
 
 Les dépendances lourdes (torch, opencv, mediapipe, ultralytics) ne sont ajoutées qu'à la phase qui en a besoin.

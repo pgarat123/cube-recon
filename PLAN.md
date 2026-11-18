@@ -2,7 +2,7 @@
 
 Reconstruction assistée de solves 3x3 (CFOP) à partir d'une vidéo, sans smart cube, puis analyse de la solve (étapes, temps, pauses, rotations, regrips, à terme fingertricks).
 
-Statut : cadrage validé le 2026-11-18. Phase 0 : repo initialisé (uv, pytest, ruff), dataset vidéo à filmer. Phase 1 : moteur cube, analyse CFOP et format Solve faits, outil de labellisation à faire.
+Statut : cadrage validé le 2026-11-18. Phase 0 : repo initialisé, 3 vidéos et l'export csTimer (21 solves) dans `data/`. Phase 1 : moteur cube, analyse CFOP, format Solve et outil web de labellisation faits (2026-11-18), reste à labelliser 10 solves à la main.
 
 ---
 
@@ -112,16 +112,17 @@ Chaque phase a un livrable et un critère de fin mesurable. On ne passe pas à l
 - Filmer le dataset selon le protocole de la section 6.
 - [x] Initialiser le repo (uv, pytest, ruff, structure).
 - [x] Dataset initial existant : 3 vidéos GoPro du 2 mai 2026 (GX010395 à GX010397, 1080p 120 fps, plusieurs solves chacune).
-- [ ] Copier les vidéos dans `data/videos/` et exporter la session csTimer correspondante dans `data/labels/` (utilisateur).
+- [x] Copier les vidéos dans `data/videos/` et exporter la session csTimer correspondante dans `data/labels/` (utilisateur). Export du 2 mai : 21 solves avec scramble.
 - **Fini quand** : vidéos et export csTimer dans `data/`, au moins 20 solves avec scramble identifié, `uv run pytest` passe.
 
 ### Phase 1 : moteur cube, analyse, outil de labellisation
 - [x] `cube/` : état 54 facettes, mouvements (faces, wide, slices, rotations), parseur, inverse, `strip_rotations`, test "mélange + solution = résolu".
 - [x] `analysis/` : segmentation CFOP (croix sur n'importe quelle couleur, comptage des paires F2L, OLL, PLL, AUF), reconnaissance des 57 OLL et 21 PLL par l'état du cube (indépendante de l'AUF et de l'orientation, pré-AUF calculé), stats (TPS ETM/STM global et par étape, pauses, nombre de rotations, temps de reconnaissance).
-- [x] `io/` : format `Solve` JSON (section 3), avec validation et `schema_version`.
+- [x] `io/` : format `Solve` JSON (section 3), avec validation et `schema_version`. v2 : `solve_window` (bornes de la solve dans la vidéo), `scramble_source`, `labeling_time_ms`. Lecture des exports csTimer (CSV).
 - [ ] `analysis/` : extraction automatique des algos LL de l'utilisateur à partir des solves labellisées (attend les premières solves labellisées).
-- [ ] Outil web de labellisation : lecteur vidéo image par image au clavier, saisie des mouvements avec timestamps, cube 3D synchronisé, export `Solve` JSON.
+- [x] Outil web de labellisation (`uv run cuberecon-label`, voir README) : API FastAPI (`api/`) et front React + cubing.js (`apps/web/`). Lecteur image par image au clavier, bornes de la solve, scramble csTimer / tapé / déduit, saisie des mouvements horodatés, cube 3D synchronisé, analyse en direct, chrono de labellisation, export `Solve` JSON. HEVC GoPro lu nativement par Chrome/Safari, copie H.264 optionnelle documentée.
 - [ ] Valider la segmentation sur de vraies solves de l'utilisateur (les tests actuels utilisent des solves CFOP construites, faute de reconstruction publique accessible).
+- [ ] Labelliser 10 solves à la main avec l'outil (utilisateur).
 - **Fini quand** : 10 solves labellisées à la main, analysées correctement ; temps moyen de labellisation manuelle d'une solve mesuré (c'est la référence que l'outil assisté devra battre).
 
 ### Phase 2 : perception

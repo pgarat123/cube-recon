@@ -4,10 +4,17 @@ version = "0.0.1"
 description = "Assisted reconstruction and analysis of 3x3 speedcubing solves from video"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.164.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[project.scripts]
+cuberecon-label = "cuberecon.api.server:main"
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.16.2",
     "pytest>=8",
     "ruff>=0.6",
 ]
